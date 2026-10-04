@@ -217,7 +217,7 @@ pub(crate) mod sealed {
     /// A prime-order group with its SPAKE2+ constants.
     pub trait Group: 'static {
         /// An integer modulo the group order `p`.
-        type Scalar: Copy + Zeroize;
+        type Scalar: p256::elliptic_curve::ff::Field + Zeroize;
         /// An element of the group.
         type Point: p256::elliptic_curve::Group<Scalar = Self::Scalar>
             + Add<Output = Self::Point>

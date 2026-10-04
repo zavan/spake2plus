@@ -25,7 +25,8 @@ pub enum Error {
     /// group other than the identity: off the curve, the identity, or
     /// malformed.
     InvalidPoint,
-    /// A scalar in a record that is not below the group order.
+    /// A scalar that is zero or not below the group order: `w0` in a record,
+    /// or `w0` or `w1` from a PBKDF output.
     InvalidScalar,
     /// A share that cancels the password's mask: `w0*N` from a verifier,
     /// or `w0*M` from a prover, which would leave `Z` and `V` the identity
@@ -49,7 +50,9 @@ impl fmt::Display for Error {
                 )
             }
             Self::InvalidPoint => f.write_str("not an encoded point of the group"),
-            Self::InvalidScalar => f.write_str("a scalar not below the group order"),
+            Self::InvalidScalar => {
+                f.write_str("a scalar that is zero or not below the group order")
+            }
             Self::DegenerateShare => f.write_str("a share that cancels the password's mask"),
             Self::ConfirmationFailed => f.write_str("the key confirmation does not match"),
         }

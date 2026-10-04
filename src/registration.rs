@@ -4,6 +4,7 @@
 use core::fmt;
 
 use p256::elliptic_curve::Group as _;
+use p256::elliptic_curve::ff::Field as _;
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::Error;
@@ -26,6 +27,14 @@ pub struct Context<'a> {
     pub prover_id: &'a [u8],
     /// `idVerifier`.
     pub verifier_id: &'a [u8],
+}
+
+/// `scalar`, unless it is zero.
+fn nonzero<S: Suite>(scalar: Scalar<S>) -> Result<Scalar<S>, Error> {
+    if bool::from(scalar.is_zero()) {
+        return Err(Error::InvalidScalar);
+    }
+    Ok(scalar)
 }
 
 /// The prover's secret, `w0` and `w1`, derived from the password.
@@ -79,7 +88,10 @@ impl<S: Suite> ProverSecret<S> {
     /// [`Error::PbkdfOutputLength`] unless the output splits into two
     /// equal halves and its length is between the suite's
     /// [`MIN_PBKDF_OUTPUT_LEN`](Suite::MIN_PBKDF_OUTPUT_LEN) and
-    /// [`MAX_PBKDF_OUTPUT_LEN`](Suite::MAX_PBKDF_OUTPUT_LEN).
+    /// [`MAX_PBKDF_OUTPUT_LEN`](Suite::MAX_PBKDF_OUTPUT_LEN), and
+    /// [`Error::InvalidScalar`] when a half reduces to zero, which no real
+    /// password hash gives: a zero `w0` would leave the shares unmasked,
+    /// and a zero `w1` the record `L` the identity.
     pub fn from_pbkdf_output(output: &[u8]) -> Result<Self, Error> {
         let refused = Error::PbkdfOutputLength {
             actual: output.len(),
@@ -91,10 +103,13 @@ impl<S: Suite> ProverSecret<S> {
             return Err(refused);
         }
         let (w0s, w1s) = output.split_at(output.len() / 2);
-        match (Group::<S>::reduce(w0s), Group::<S>::reduce(w1s)) {
-            (Some(w0), Some(w1)) => Ok(Self { w0, w1 }),
-            _ => Err(refused),
-        }
+        let (Some(w0), Some(w1)) = (Group::<S>::reduce(w0s), Group::<S>::reduce(w1s)) else {
+            return Err(refused);
+        };
+        Ok(Self {
+            w0: nonzero::<S>(w0)?,
+            w1: nonzero::<S>(w1)?,
+        })
     }
 
     /// The verifier's registration record: `w0` and `L = w1*P`.
@@ -139,8 +154,9 @@ impl<S: Suite> fmt::Debug for ProverSecret<S> {
 
 /// The verifier's registration record: `w0` and `L = w1*P`.
 ///
-/// Keep it secret: with it, anyone can pose as the verifier. It is zeroized
-/// on drop, and its `Debug` shows nothing.
+/// Keep it secret: with it, anyone can pose as the verifier, and test
+/// password guesses offline against `L`. It is zeroized on drop, and its
+/// `Debug` shows nothing.
 pub struct VerifierRecord<S: Suite> {
     w0: Scalar<S>,
     l: Point<S>,
@@ -152,7 +168,7 @@ impl<S: Suite> VerifierRecord<S> {
     /// # Errors
     ///
     /// [`Error::Length`] for the wrong length, [`Error::InvalidScalar`] when
-    /// `w0` is not below the group order, and [`Error::InvalidPoint`] when
+    /// `w0` is zero or not below the group order, and [`Error::InvalidPoint`] when
     /// `L` is not an element of the group other than the identity.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         let expected = size_of::<S::Record>();
@@ -167,7 +183,7 @@ impl<S: Suite> VerifierRecord<S> {
             .split_at_checked(size_of::<ScalarBytes<S>>())
             .ok_or(length)?;
         Ok(Self {
-            w0: Group::<S>::scalar_from_bytes(w0).ok_or(Error::InvalidScalar)?,
+            w0: nonzero::<S>(Group::<S>::scalar_from_bytes(w0).ok_or(Error::InvalidScalar)?)?,
             l: Group::<S>::decode(l).ok_or(Error::InvalidPoint)?,
         })
     }

@@ -211,6 +211,12 @@ fn a_malformed_record_is_refused() {
         VerifierRecord::<P256Sha256>::from_bytes(&w0_is_the_order).err(),
         Some(Error::InvalidScalar)
     );
+    let mut w0_is_zero = record.to_vec();
+    w0_is_zero[..32].fill(0);
+    assert_eq!(
+        VerifierRecord::<P256Sha256>::from_bytes(&w0_is_zero).err(),
+        Some(Error::InvalidScalar)
+    );
     let mut l_off_curve = record.to_vec();
     l_off_curve[96] ^= 1;
     assert_eq!(
@@ -244,6 +250,32 @@ fn a_pbkdf_output_of_an_unusable_length_is_refused() {
 }
 
 #[test]
+fn a_pbkdf_output_reducing_to_a_zero_scalar_is_refused() {
+    let mut output = [0; 80];
+    output[79] = 1;
+    assert_eq!(
+        ProverSecret::<P256Sha256>::from_pbkdf_output(&output).err(),
+        Some(Error::InvalidScalar),
+        "w0 is zero"
+    );
+    let mut output = [0; 80];
+    output[39] = 1;
+    assert_eq!(
+        ProverSecret::<P256Sha256>::from_pbkdf_output(&output).err(),
+        Some(Error::InvalidScalar),
+        "w1 is zero"
+    );
+    // The order itself reduces to zero too.
+    let mut output = [0; 80];
+    output[8..40].copy_from_slice(&unhex(ORDER));
+    output[79] = 1;
+    assert_eq!(
+        ProverSecret::<P256Sha256>::from_pbkdf_output(&output).err(),
+        Some(Error::InvalidScalar)
+    );
+}
+
+#[test]
 fn every_error_says_what_went_wrong() {
     let shown = [
         Error::Length {
@@ -263,7 +295,7 @@ fn every_error_says_what_went_wrong() {
             "expected 65 bytes, got 64",
             "a PBKDF output of 79 bytes is not two equal halves of a usable length",
             "not an encoded point of the group",
-            "a scalar not below the group order",
+            "a scalar that is zero or not below the group order",
             "a share that cancels the password's mask",
             "the key confirmation does not match",
         ]
