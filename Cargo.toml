@@ -65,3 +65,9 @@ dbg_macro = "warn"
 
 # Thresholds live in clippy.toml.
 cognitive_complexity = "warn"
+
+# Dependencies build optimized in development: the curve arithmetic in
+# them is most of the tests' run time, and this crate's own code stays
+# unoptimized and fully checked. Dependents never read these profiles.
+[profile.dev.package."*"]
+opt-level = 3
