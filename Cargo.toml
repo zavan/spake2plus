@@ -1,0 +1,67 @@
+[package]
+name = "spake2plus"
+version = "0.1.0"
+authors = ["Felipe Zavan"]
+edition = "2024"
+# The oldest Rust this crate builds on; bin/check builds it there.
+rust-version = "1.85.0"
+description = "SPAKE2+ (RFC 9383), the augmented password-authenticated key exchange: prover and verifier, no_std"
+license = "MIT"
+repository = "https://github.com/zavan/spake2plus"
+documentation = "https://docs.rs/spake2plus"
+readme = "README.md"
+keywords = ["spake2", "pake", "rfc9383", "key-exchange", "password"]
+categories = ["cryptography", "no-std", "no-std::no-alloc"]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/CHANGELOG.md"]
+
+[dependencies]
+hkdf = { version = "0.13.0", default-features = false }
+hmac = { version = "0.13.0", default-features = false, features = ["zeroize"] }
+p256 = { version = "0.14.0", default-features = false, features = ["arithmetic"] }
+sha2 = { version = "0.11.0", default-features = false, features = ["zeroize"] }
+subtle = { version = "2.6.1", default-features = false }
+zeroize = { version = "1.9.0", default-features = false }
+
+[dev-dependencies]
+# Makes the registration example in the docs compile; not used by the crate.
+pbkdf2 = { version = "0.13.0", default-features = false, features = ["hmac"] }
+proptest = { version = "1.11.0", default-features = false, features = ["std"] }
+# A real random number generator for the examples and the cross-role tests.
+rand = "0.10.3"
+
+# Warnings fail: bin/check runs clippy with `-D warnings`, so every lint below
+# at "warn" is an error in the gate while staying readable in an editor.
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unreachable_pub = "warn"
+unused_qualifications = "warn"
+let_underscore_drop = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "warn"
+private_intra_doc_links = "warn"
+
+[lints.clippy]
+# rustfmt owns formatting; clippy is spent on defects.
+pedantic = { level = "warn", priority = -1 }
+
+# Suppressions name their lint, carry a reason and fail once stale: only
+# #[expect(lint, reason = "...")] is allowed, never #[allow].
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# A library never panics on its caller's input, and never prints.
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+todo = "warn"
+unimplemented = "warn"
+mem_forget = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+
+# Thresholds live in clippy.toml.
+cognitive_complexity = "warn"
