@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# The only command that writes: applies safe lint fixes and formatting.
+# Never use it to verify; run bin/check afterwards.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=bin/lib/env.sh
+. bin/lib/env.sh
+
+step "clippy --fix"
+clippy --fix --allow-dirty --allow-staged
+
+step "rustfmt"
+cargo fmt --all

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Installs the pinned tools (mise.toml; mise reads the Rust pin from
+# rust-toolchain.toml) and the oldest supported Rust, which bin/check builds
+# the crate with. Safe to run again.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+step() {
+  printf '\n==> %s\n' "$*"
+}
+
+step "pinned tools (mise install)"
+mise install
+
+# shellcheck source=bin/lib/env.sh
+. bin/lib/env.sh
+
+step "the pinned Rust's components and targets (rust-toolchain.toml)"
+# mise selects the toolchain through RUSTUP_TOOLCHAIN, which hides the file
+# from rustup; without it, rustup installs everything the file names.
+env -u RUSTUP_TOOLCHAIN rustup toolchain install
+
+step "the oldest supported Rust, $(msrv) (rust-version in Cargo.toml)"
+rustup toolchain install "$(msrv)" --profile minimal
+
+printf '\nsetup: OK\n'

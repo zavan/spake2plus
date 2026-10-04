@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Proves every guard can still fail. Each canary plants a violation and expects
+# the guard to report it, by name. A guard that goes quiet fails this script.
+# Run by bin/test; the planted Rust violations live in guards/rust-canary, the
+# rest are written to a temporary directory here.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=bin/lib/env.sh
+. bin/lib/env.sh
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+# shellcheck source=bin/lib/canary.sh
+. bin/lib/canary.sh
+
+step "rust lint config (guards/rust-canary)"
+out="$work/clippy.out"
+if expect_failure clippy "$out" \
+  cargo clippy -p spake2plus-guard-canary --locked -- -D warnings; then
+  expect_reported clippy "$out" \
+    "\`-D clippy::allow-attributes\`" \
+    "\`-D clippy::allow-attributes-without-reason\`" \
+    "\`-D unfulfilled-lint-expectations\`" \
+    "\`-D missing-docs\`" \
+    "\`-D clippy::must-use-candidate\`" \
+    "\`-D clippy::missing-panics-doc\`" \
+    "\`-D clippy::unwrap-used\`" \
+    "\`-D clippy::indexing-slicing\`" \
+    "\`-D clippy::print-stdout\`" \
+    "\`-F unsafe-code\`"
+fi
+
+step "repo guards (bin/guard on planted fixtures)"
+mkdir -p "$work/repo/src" "$work/repo/fuzz/.cargo"
+printf 'channel = "0.0.1"\n' >"$work/repo/rust-toolchain.toml"
+out="$work/toolchain.out"
+if expect_failure toolchain "$out" bin/guard toolchain "$work/repo"; then
+  expect_reported toolchain "$out" "but rust-toolchain.toml pins 0.0.1"
+fi
+
+printf 'too-many-lines-threshold = 1000\n' >"$work/repo/clippy.toml"
+printf 'too-many-lines-threshold = 1000\n' >"$work/repo/src/clippy.toml"
+printf 'max_width = 200\n' >"$work/repo/src/.rustfmt.toml"
+printf '[build]\n' >"$work/repo/fuzz/.cargo/config.toml"
+out="$work/lint-configs.out"
+if expect_failure lint-configs "$out" bin/guard lint-configs "$work/repo"; then
+  expect_reported lint-configs "$out" \
+    "lint config outside the allowlist in bin/guard: src/clippy.toml" \
+    "lint config outside the allowlist in bin/guard: src/.rustfmt.toml" \
+    "lint config outside the allowlist in bin/guard: fuzz/.cargo/config.toml"
+  expect_not_reported lint-configs "$out" "bin/guard: clippy.toml"
+fi
+
+printf '{}\n' >"$work/repo/src/clippy-baseline.json"
+out="$work/no-baselines.out"
+if expect_failure no-baselines "$out" bin/guard no-baselines "$work/repo"; then
+  expect_reported no-baselines "$out" "baseline or ignore file: src/clippy-baseline.json"
+fi
+
+printf 'A sentence with an em-dash \342\200\224 planted.\n' >"$work/repo/notes.md"
+printf 'A range with an en-dash: 1\342\200\2232.\n' >"$work/repo/range.md"
+out="$work/em-dashes.out"
+if expect_failure em-dashes "$out" bin/guard em-dashes "$work/repo"; then
+  expect_reported em-dashes "$out" "notes.md" "range.md"
+fi
+
+step "repo guards skip build output and the fuzzer's findings"
+for dir in target fuzz/corpus fuzz/artifacts; do
+  mkdir -p "$work/skipped/$dir"
+  printf 'An em-dash \342\200\224 in build output.\n' >"$work/skipped/$dir/notes.md"
+  printf 'max_width = 200\n' >"$work/skipped/$dir/rustfmt.toml"
+  printf '{}\n' >"$work/skipped/$dir/x-baseline.json"
+done
+for guard in lint-configs no-baselines em-dashes; do
+  out="$work/skipped-$guard.out"
+  if bin/guard "$guard" "$work/skipped" >"$out" 2>&1; then
+    echo "canary ok: $guard skips build output"
+  else
+    fail "$guard: read a skipped directory"
+    sed 's/^/    | /' "$out"
+  fi
+done
+
+if [ "$failures" -gt 0 ]; then
+  printf '\ncanaries: %d FAILED\n' "$failures"
+  exit 1
+fi
+printf '\ncanaries: OK\n'

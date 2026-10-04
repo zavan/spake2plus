@@ -1,7 +1,8 @@
-# The crate, and the fuzz targets beside it (fuzz/, never published), which
-# share its lints and lockfile.
+# The crate, the fuzz targets beside it (fuzz/) and the planted lint
+# violations (guards/rust-canary), which share its lints and lockfile. Only
+# the crate is published, and only it is a default member.
 [workspace]
-members = [".", "fuzz"]
+members = [".", "fuzz", "guards/rust-canary"]
 default-members = ["."]
 resolver = "3"
 

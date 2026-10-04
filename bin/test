@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Runs every suite once, in the foreground, one at a time. Never watch mode.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=bin/lib/env.sh
+. bin/lib/env.sh
+
+# Neither UTC nor any user's zone, so accidental local-time use fails loudly.
+export TZ=Australia/Sydney
+
+step "rust: unit, integration, property and doc tests"
+cargo test --locked
+
+step "guard canaries"
+bin/canaries
+
+printf '\ntest: OK\n'

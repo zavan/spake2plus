@@ -4,4 +4,6 @@
 [toolchain]
 channel = "1.98.1"
 components = ["rustfmt", "clippy"]
+# A target without std, so bin/check proves the crate builds there.
+targets = ["thumbv7em-none-eabihf"]
 profile = "minimal"

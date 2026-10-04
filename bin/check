@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# The read-only gate. Fails on any finding, warnings included, and never
+# writes. `bin/check && bin/test` green is the definition of done.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=bin/lib/env.sh
+. bin/lib/env.sh
+
+step "repo guards"
+bin/guard all
+
+step "shellcheck (bin/)"
+shellcheck --external-sources bin/check bin/test bin/fix bin/setup bin/guard bin/canaries \
+  bin/lib/env.sh bin/lib/canary.sh
+
+step "rustfmt"
+cargo fmt --all --check
+
+step "clippy (the crate, its tests and the fuzz target)"
+clippy -- -D warnings
+
+step "clippy (no_std: a target without std)"
+cargo clippy -p spake2plus --lib --locked --target thumbv7em-none-eabihf -- -D warnings
+
+step "rustdoc"
+RUSTDOCFLAGS="-D warnings" cargo doc -p spake2plus --no-deps --locked
+
+step "the oldest supported Rust ($(msrv), rust-version in Cargo.toml)"
+if ! rustup run "$(msrv)" rustc --version >/dev/null 2>&1; then
+  echo "Rust $(msrv) is not installed. Run bin/setup."
+  exit 1
+fi
+# Whether it compiles there, not its lints: those are the pinned toolchain's
+# (above), and an older compiler's differ (1.85 reports `unreachable_pub` on
+# the sealed traits that later effective-visibility rules see are reachable).
+RUSTFLAGS="-A warnings" cargo "+$(msrv)" check -p spake2plus --lib --locked --target-dir target/msrv
+
+step "unused dependencies"
+cargo machete
+
+step "dependency licenses, bans and sources (cargo-deny)"
+cargo deny --log-level warn check licenses bans sources
+
+printf '\ncheck: OK\n'
