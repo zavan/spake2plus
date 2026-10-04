@@ -15,7 +15,7 @@ follows [Semantic Versioning](https://semver.org/).
   against RFC 9383's test vectors.
 - Registration from a caller's password hash output
   (`ProverSecret::from_pbkdf_output`) and the verifier's stored record
-  (`VerifierRecord`).
+  (`VerifierRecord`), both refusing a zero `w0` or `w1`.
 - Typed messages that refuse malformed shares, points off the curve, the
   identity and shares that cancel the password's mask.
 - Constant-time confirmation checks, sessions that each step consumes, and

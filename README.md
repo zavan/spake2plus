@@ -108,7 +108,8 @@ breaking callers.
 - **Validation.** A share must be an uncompressed SEC1 point on the curve and
   not the identity, or it does not parse. A share equal to the password's
   mask (`w0*N` from a verifier, `w0*M` from a prover) is refused, since it
-  would leave nothing secret in the key.
+  would leave nothing secret in the key, and so is a run whose own random
+  scalar is zero. Registration refuses a zero `w0` or `w1`.
 - **Zeroization.** The prover's secret, the verifier's record, every session
   and the shared key are zeroized on drop (`zeroize`), and so are the hash
   and HMAC states (the `zeroize` features of `sha2` and `hmac`). Copies the
