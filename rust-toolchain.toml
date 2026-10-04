@@ -1,0 +1,7 @@
+# The single pin for the development toolchain. rustup reads it directly, and
+# mise reads it too (see mise.toml), so the version lives only here. The
+# oldest supported Rust is `rust-version` in Cargo.toml, checked by bin/check.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

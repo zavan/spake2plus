@@ -1,0 +1,12 @@
+# Build output. Always safe to delete.
+/target/
+/fuzz/target/
+/fuzz/corpus/
+/fuzz/artifacts/
+/fuzz/coverage/
+
+# Local agent approvals and environment files: never committed.
+.claude/settings.local.json
+.env*
+
+.DS_Store

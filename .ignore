@@ -1,0 +1,5 @@
+# Hidden from ripgrep on top of .gitignore. Keep this list tight: everything
+# here becomes invisible to rg.
+**/.claude/worktrees/
+Cargo.lock
+fuzz/Cargo.lock

@@ -1,0 +1,12 @@
+# Tool pins for this repo. Run `bin/setup` once after cloning.
+# Rust is pinned in rust-toolchain.toml only; mise reads it from there.
+[tools]
+# Lints the bin/ scripts in bin/check.
+shellcheck = "0.11.0"
+# Unused-dependency check in bin/check.
+"cargo:cargo-machete" = "0.9.2"
+# Licenses, bans and sources in bin/check; advisories on demand (README).
+"cargo:cargo-deny" = "0.20.2"
+
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
