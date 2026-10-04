@@ -143,8 +143,9 @@ impl sealed::Group for NistP256 {
 
     fn decode(bytes: &[u8]) -> Option<Self::Point> {
         // Uncompressed only: `from_sec1_bytes` alone would also take the
-        // compressed form and the identity's single byte.
-        if bytes.len() != P256_POINT_LEN || bytes.first() != Some(&0x04) {
+        // compressed form and the identity's single byte. It checks the
+        // length the tag implies.
+        if bytes.first() != Some(&0x04) {
             return None;
         }
         // Refuses points off the curve. P-256 has cofactor 1, so every

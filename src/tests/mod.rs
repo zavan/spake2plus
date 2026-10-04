@@ -1,6 +1,7 @@
 //! Tests with access to the crate's internals: the RFC's vectors, checked
 //! value by value, and the group's encodings and reductions.
 
+mod degenerate;
 mod group;
 mod rfc9383;
 mod vectors;
