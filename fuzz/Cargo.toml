@@ -1,0 +1,23 @@
+# Fuzz targets for the message parsing, run with cargo-fuzz (README).
+[package]
+name = "spake2plus-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+spake2plus = { path = ".." }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "parse_messages"
+path = "fuzz_targets/parse_messages.rs"
+test = false
+doc = false
+bench = false
