@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-04
+
 ### Added
 
 - SPAKE2+ (RFC 9383) for both roles, `Prover` and `Verifier`, `no_std`
@@ -22,3 +24,6 @@ follows [Semantic Versioning](https://semver.org/).
   `ProverConfirming::confirm_first` for protocols that send the prover's
   confirmation first.
 - Zeroization on drop of every secret.
+
+[Unreleased]: https://github.com/zavan/spake2plus/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/zavan/spake2plus/releases/tag/v0.1.0
