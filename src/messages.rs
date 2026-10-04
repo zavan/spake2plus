@@ -59,7 +59,6 @@ macro_rules! share {
                 Group::<S>::encode(point, share.as_mut()).ok_or(Error::DegenerateShare)?;
                 Ok(Self(share))
             }
-
         }
 
         impl<S: Suite> SharePoint<S> for $name<S> {
